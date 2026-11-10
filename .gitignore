@@ -1,0 +1,8 @@
+*.gguf
+.llm/
+__pycache__/
+*.pyc
+.venv/
+.env
+*.key
+config.json
