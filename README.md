@@ -1,6 +1,8 @@
-# LLM_LOCAL
+# LLM_RE_Local
 
 Comando `llm` para conversar no terminal do Windows com um modelo de linguagem próprio, rodando no Google Colab (GPU T4) ou no PC (CPU), com fallback automático entre os dois. Só biblioteca padrão do Python 3.13.
+
+**Nome:** LLM + RE (*Reverse Engineering*, engenharia reversa) + Local. Uma LLM que roda na minha máquina (ou no meu Colab), feita para engenharia reversa.
 
 ## Propósito
 

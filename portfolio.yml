@@ -1,4 +1,4 @@
-title: "LLM_LOCAL"
+title: "LLM_RE_Local"
 summary: "Comando llm para conversar no terminal com uma LLM própria, no Colab (GPU T4) ou no PC (CPU), com fallback automático. Feita para apoiar engenharia reversa de eletrônicos."
 category: other
 problem: "Serviços de IA em nuvem recusam perguntas de engenharia reversa e exigem enviar firmware, dumps e logs a terceiros. Faltava uma LLM própria, com menos recusas, usável no dia a dia."
