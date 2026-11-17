@@ -12,6 +12,7 @@ def _defaults():
         "colab_key": "",
         "modelo_local": str(HOME / "models" / "DeepSeek-V4-Pro-Qwen3.5-9B-UNCENSORED-heretic.i1-Q4_K_M.gguf"),
         "porta_local": 8080,
+        "pasta": str(Path.home() / "llm_arquivos"),
     }
 
 

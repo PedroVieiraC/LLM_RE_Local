@@ -1,7 +1,7 @@
 import argparse
 import sys
 
-from . import client, config, local
+from . import arquivos, client, config, local
 
 
 def pick(cfg, force_local=False):
@@ -47,7 +47,8 @@ def chat(args):
         state = {"backend": pick(cfg, args.local)}
     except client.BackendError as e:
         sys.exit(str(e))
-    print("Backend: %s. Comandos: /sair /limpar /backend /pensar" % state["backend"][0])
+    print("Backend: %s. Comandos: /sair /limpar /backend /pensar /ler /prompt /salvar" % state["backend"][0])
+    print("Pasta de arquivos:", cfg["pasta"])
     messages = []
     while True:
         try:
@@ -55,6 +56,13 @@ def chat(args):
         except (EOFError, KeyboardInterrupt):
             print()
             return
+        if msg.startswith("/prompt "):
+            try:
+                msg = arquivos.ler(cfg["pasta"], msg[8:].strip())[0]  # o texto do arquivo vira a mensagem
+            except (OSError, ValueError) as e:
+                print("Erro:", e)
+                continue
+            print("[prompt do arquivo enviado]")
         if not msg:
             continue
         if msg == "/sair":
@@ -67,6 +75,24 @@ def chat(args):
         elif msg == "/pensar":
             think = not think
             print("Thinking:", "ligado" if think else "desligado")
+        elif msg == "/ler" or msg.startswith("/ler "):
+            try:
+                texto, nomes = arquivos.ler(cfg["pasta"], msg[4:].strip())
+            except (OSError, ValueError) as e:
+                print("Erro:", e)
+                continue
+            messages.append({"role": "user", "content": "Conteúdo de arquivos para usar na conversa:\n\n" + texto})
+            messages.append({"role": "assistant", "content": "Li os arquivos."})
+            print("[%d arquivo(s) lido(s): %s]" % (len(nomes), ", ".join(nomes)))
+        elif msg.startswith("/salvar "):
+            ultima = next((m["content"] for m in reversed(messages) if m["role"] == "assistant"), None)
+            if ultima is None:
+                print("Nenhuma resposta para salvar.")
+                continue
+            try:
+                print("Salvo em", arquivos.salvar(cfg["pasta"], msg[8:].strip(), ultima))
+            except (OSError, ValueError) as e:
+                print("Erro:", e)
         else:
             messages.append({"role": "user", "content": msg})
             try:
