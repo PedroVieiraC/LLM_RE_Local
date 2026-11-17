@@ -105,5 +105,22 @@ class ConfigAndFallbackTest(unittest.TestCase):
         self.assertEqual(seen["body"]["messages"], msgs)  # histórico reenviado
 
 
+class ArquivosTest(unittest.TestCase):
+    def test_ler_salvar_e_bloqueio_fora_da_pasta(self):
+        from llm import arquivos
+        with tempfile.TemporaryDirectory() as base:
+            arquivos.salvar(base, "notas/a.txt", "olá")
+            texto, nomes = arquivos.ler(base, "notas")
+            self.assertEqual(nomes, ["a.txt"])
+            self.assertIn("olá", texto)
+            self.assertIn("olá", arquivos.ler(base, "notas/a.txt")[0])
+            with self.assertRaises(ValueError):
+                arquivos.ler(base, "..")
+            with self.assertRaises(ValueError):
+                arquivos.salvar(base, "../fora.txt", "x")
+            with self.assertRaises(ValueError):
+                arquivos.salvar(base, "script.bat", "x")
+
+
 if __name__ == "__main__":
     unittest.main()

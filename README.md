@@ -1,55 +1,73 @@
-# LLM_LOCAL
+# LLM_RE_Local
 
-Comando `llm` para conversar no terminal do Windows com o modelo `DeepSeek-V4-Pro-Qwen3.5-9B-UNCENSORED-heretic`, rodando no Google Colab (GPU T4, via túnel) ou localmente na CPU (llama.cpp), com fallback automático e histórico preservado. Só biblioteca padrão do Python 3.13.
+Comando `llm` para conversar no terminal do Windows com um modelo de linguagem próprio, rodando no Google Colab (GPU T4) ou no PC (CPU), com fallback automático entre os dois. Só biblioteca padrão do Python 3.13.
 
-## Níveis e riscos
-| Nível | Onde roda | Como usa | Risco |
-|---|---|---|---|
-| N0 | PC (CPU) | `llm` no terminal | nenhum (lento, ~4-7 tokens/s, estimativa) |
-| N1 | Colab GPU | chat dentro do notebook, sem túnel | dentro das regras do Colab |
-| N2 | Colab GPU | `llm` no terminal via túnel cloudflared + chave | **viola o FAQ do plano gratuito do Colab**; risco seu. Use conta Google secundária, ligue só quando for usar e desconecte o runtime ao terminar |
+**Nome:** LLM + RE (*Reverse Engineering*, engenharia reversa) + Local. Uma LLM que roda na minha máquina (ou no meu Colab), feita para engenharia reversa.
 
-Não há keep-alive automático nem ocultação de tráfego, de propósito.
+## Propósito
 
-## Instalação local (N0)
-1. Precisa de ~7 GB livres em disco e RAM livre (o modelo Q4_K_M tem 5,63 GB).
-2. Rode: `powershell -ExecutionPolicy Bypass -File scripts\instalar_local.ps1`
-   (baixa llama.cpp CPU e o modelo para `%USERPROFILE%\.llm`; pode ser repetido, retoma o download e pula o que já existe).
-3. Use `.\llm.cmd` dentro da pasta do projeto, ou adicione a pasta do projeto ao PATH para chamar só `llm`.
-4. Teste: `llm status` e depois `llm`.
+Ter uma LLM local, com menos restrições de recusa, para apoiar a engenharia reversa de eletrônicos que já tenho em mãos: televisores, Amazon Alexa, multimídias chinesas, dispositivos Google, celulares antigos e eletrônicos em geral. Serve para analisar firmware, dumps, logs e código, e para explicar formatos e protocolos, sem depender de serviços em nuvem que bloqueiam esse tipo de pergunta e sem enviar meus arquivos a terceiros.
+
+O modelo usado é o `DeepSeek-V4-Pro-Qwen3.5-9B-UNCENSORED-heretic` (GGUF, via llama.cpp).
+
+## Como foi feito
+
+- **Cliente `llm`** (`llm/`): chat de terminal com streaming, histórico preservado e escolha do backend (`auto`, `local` ou Colab). Fala com o `llama-server` pela API compatível com OpenAI.
+- **Local**: `scripts/instalar_local.ps1` baixa o llama.cpp (CPU) e o modelo Q4_K_M (5,63 GB) para `%USERPROFILE%\.llm`.
+- **Colab**: `colab/llm_colab.ipynb` sobe o mesmo servidor com GPU T4 (modelo Q6_K) e, opcionalmente, um túnel cloudflared protegido por chave.
+- **Fallback**: se o Colab cair no meio da conversa, o `llm` sobe o servidor local e reenvia o mesmo histórico.
+- **Arquivos**: `/ler`, `/prompt` e `/salvar` só acessam uma pasta definida no config; a IA nunca mexe em arquivos sozinha.
+- **Testes**: `unittest`, sem rede.
+
+## Níveis
+
+| Nível | Onde roda | Como usa | Velocidade medida | Risco |
+|---|---|---|---|---|
+| N0 | PC (CPU, i5-1135G7, 16 GB) | `llm` no terminal | ~2,4 tok/s | nenhum |
+| N1 | Colab GPU T4 | chat dentro do notebook | ~27 tok/s | dentro das regras do Colab |
+| N2 | Colab GPU T4 | `llm` no terminal via túnel | ~27 tok/s | **viola o FAQ do plano gratuito do Colab**; use conta secundária e desconecte ao terminar |
+
+A medição do N0 foi feita com pouca RAM livre. Não há keep-alive do Colab nem ocultação de tráfego, de propósito. Detalhes do hardware em `docs/ANALISE_HARDWARE.md`.
+
+## Como usar
+
+**Local (N0)**
+1. Tenha ~7 GB livres em disco e RAM livre.
+2. `powershell -ExecutionPolicy Bypass -File scripts\instalar_local.ps1` (pode repetir; retoma o download).
+3. `.\llm.cmd status` e depois `.\llm.cmd` (ou ponha a pasta no PATH e use só `llm`).
+
+**Colab (N1 e N2)**
+1. Abra `colab/llm_colab.ipynb` no Colab, com ambiente de execução GPU T4.
+2. Execute as células na ordem: 1 (binário CUDA), 2 (modelo e servidor), 3 (N1: chat no notebook).
+3. N2: execute a célula 4, copie a linha `llm colab <url> <chave>` e cole no terminal do Windows.
+4. Ao terminar: células 5 e 6 e **Desconectar e excluir ambiente de execução**.
 
 Config e chave ficam em `%USERPROFILE%\.llm\config.json`, fora do repositório.
 
-## Colab (N1 e N2)
-1. Abra `colab/llm_colab.ipynb` no Colab logado na **conta secundária**.
-2. Ambiente de execução -> tipo de ambiente -> GPU T4.
-3. Execute as células na ordem: 1 (binário CUDA), 2 (modelo Q6_K + servidor, baixa ~7,4 GB a cada sessão), 3 (N1: chat no notebook).
-4. Para N2: execute a célula 4, copie a linha `llm colab <url> <chave>` impressa e cole no terminal do Windows. Depois use `llm`.
-5. Ao terminar: célula 5 (fecha o túnel), célula 6 (fecha o servidor) e Ambiente de execução -> **Desconectar e excluir ambiente de execução**.
-
 ## Comandos
+
 | Comando | O que faz |
 |---|---|
-| `llm` / `llm chat` | chat (backend `auto`: Colab se configurado e respondendo, senão local) |
-| `llm chat --sem-pensar` | desliga o thinking (respostas mais rápidas) |
-| `llm chat --local` | força o local nesta sessão |
-| `llm status` | backend configurado e se Colab/local respondem |
-| `llm colab <url> <chave>` | salva o Colab e testa o `/health` |
-| `llm colab --limpar` | remove URL e chave |
-| `llm local` | fixa o backend em local |
-| `llm auto` | volta ao automático |
-| `llm parar` | para o servidor local iniciado pelo `llm` |
+| `llm` / `llm chat` | chat (Colab se configurado e respondendo, senão local) |
+| `llm chat --sem-pensar` | desliga o thinking (mais rápido) |
+| `llm chat --local` | força o local |
+| `llm status` | mostra o backend e se Colab/local respondem |
+| `llm colab <url> <chave>` / `--limpar` | salva ou remove o Colab |
+| `llm local` / `llm auto` | fixa o backend em local / volta ao automático |
+| `llm parar` | para o servidor local |
 
-No chat: `/sair`, `/limpar` (zera o histórico), `/backend` (mostra o em uso), `/pensar` (liga/desliga thinking). Ctrl+C durante uma resposta interrompe só a resposta.
-
-Se o Colab falhar no meio, o `llm` avisa, sobe o local e reenvia o mesmo histórico.
+No chat: `/sair`, `/limpar`, `/backend`, `/pensar`, `/ler [arquivo ou pasta]`, `/prompt <arquivo>`, `/salvar <nome.txt>`.
 
 ## Solução de problemas
-- **RAM baixa / servidor local não sobe:** feche navegador e outros programas; veja `%USERPROFILE%\.llm\llama-server.log`.
-- **Porta 8080 ocupada:** edite `porta_local` em `%USERPROFILE%\.llm\config.json`, ou pare o outro programa. Se for um llama-server antigo, `llm parar`.
-- **Túnel caiu:** o chat troca para o local sozinho; para voltar ao Colab, rode as células de novo e `llm colab` com a nova URL/chave.
-- **Binário CUDA falhou no Colab:** use a célula 1b (compila com `-DCMAKE_CUDA_ARCHITECTURES=75`, ~10-15 min).
-- **"llama-server ou modelo local ausente":** rode `scripts\instalar_local.ps1`.
+
+- **Servidor local não sobe:** feche navegador e outros programas; veja `%USERPROFILE%\.llm\llama-server.log`.
+- **Porta 8080 ocupada:** mude `porta_local` no `config.json` ou rode `llm parar`.
+- **Binário CUDA falhou no Colab:** use a célula 1b (compila para a arquitetura 75, ~10-15 min).
 
 ## Desenvolvimento
-`python -m unittest discover -s tests` (sem rede). Documentos: `start_instructions/`, `memoria/`.
+
+`python -m unittest discover -s tests`
+
+## Uso responsável
+
+Use só em equipamentos seus ou com autorização. O projeto não inclui ferramentas que agem sozinhas sobre dispositivos nem sobre arquivos.

@@ -6,3 +6,10 @@ __pycache__/
 .env
 *.key
 config.json
+memoria/
+relatorios/
+start_instructions/
+CLAUDE.md
+.claude/
+AVISO-PUBLICAR.md
+from_multimidia-llm/
