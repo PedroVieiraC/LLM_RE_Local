@@ -7,3 +7,4 @@ results: "Medido: ~2,4 tokens/s na CPU do PC (i5-1135G7, 16 GB, pouca RAM livre)
 stack: [Python, llama.cpp, Google Colab, cloudflared, PowerShell]
 order: 100
 status: active
+top: 3
